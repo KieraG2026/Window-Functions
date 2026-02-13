@@ -1,0 +1,11 @@
+---
+title: "Window Functions- Assignment 3B"
+author: "Kiera Griffiths"
+format: html
+editor: visual
+---
+
+## Approach 
+For this assignment, I will use CPI data from the Federal Reserve Bank of St. Louis (FRED) about the average price of a dozen eggs and a gallon of milk. I will format both datasets to present prices by month, then merge both to be analyzed collectively. Using dplyr I will calculate the year-to-date average for eggs and milk by grouping the data by item and year and computing a cumulative average from the beginning of each year. I will also calculate a six-month moving average to smooth short-term fluctuations and better understand pricing over time. These calculations will be performed using window functions that operate across ordered time-based observations. I anticipate potential data challenges may include either of the datasets missing values or having inconsistent formatting.  
+
+ 
