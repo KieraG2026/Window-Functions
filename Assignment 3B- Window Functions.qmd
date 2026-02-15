@@ -2,10 +2,64 @@
 title: "Window Functions- Assignment 3B"
 author: "Kiera Griffiths"
 format: html
-editor: visual
+editor: source
 ---
 
 ## Approach 
 For this assignment, I will use CPI data from the Federal Reserve Bank of St. Louis (FRED) about the average price of a dozen eggs and a gallon of milk. I will format both datasets to present prices by month, then merge both to be analyzed collectively. Using dplyr I will calculate the year-to-date average for eggs and milk by grouping the data by item and year and computing a cumulative average from the beginning of each year. I will also calculate a six-month moving average to smooth short-term fluctuations and better understand pricing over time. These calculations will be performed using window functions that operate across ordered time-based observations. I anticipate potential data challenges may include either of the datasets missing values or having inconsistent formatting.  
 
- 
+# Load libraries
+library(dplyr)     # For data manipulation & window functions
+library(readr)     # To read CSV files from URLs
+library(lubridate) # To handle dates
+library(tidyr)     # To reshape data into tidy format
+library(slider)    # To calculate rolling (moving) averages
+
+# Load CSV files directly from URLs
+eggs <- read_csv("https://raw.githubusercontent.com/KieraG2026/Window-Functions/refs/heads/main/FRED%20CPI%20Data-%20Dozen%20Eggs.csv")
+milk <- read_csv("https://raw.githubusercontent.com/KieraG2026/Window-Functions/refs/heads/main/FRED%20CPI%20Data-%20Gallon%20Milk.csv")
+
+# Convert observation_date columns to date format
+eggs <- eggs %>% mutate(observation_date = ymd(observation_date))
+milk <- milk %>% mutate(observation_date = ymd(observation_date))
+
+# Filter data from Jan 1, 2022 onwards
+eggs <- eggs %>% filter(observation_date >= as.Date("2022-01-01"))
+milk <- milk %>% filter(observation_date >= as.Date("2022-01-01"))
+
+# Rename price columns for clarity
+colnames(eggs)[2] <- "Eggs"
+colnames(milk)[2] <- "Milk"
+
+# Merge datasets by observation_date
+df <- left_join(eggs, milk, by = "observation_date")
+
+# Convert to long format (tidy data)
+df <- df %>%
+  pivot_longer(cols = c(Eggs, Milk),
+               names_to = "Item",
+               values_to = "Price")
+
+# Add Year column for YTD calculation
+df <- df %>%
+  mutate(Year = year(observation_date))
+
+# Calculate Year-to-Date (YTD) average
+df <- df %>%
+  arrange(observation_date) %>%             # Ensure chronological order
+  group_by(Item, Year) %>%                  # Group by item and year
+  mutate(YTD_avg = cummean(Price))          # Cumulative mean = YTD average
+
+# Calculate 6-Observation Moving Average
+# ⚠ Note: Dataset is monthly, not daily
+# The assignment asks for "six-day moving average" but CPI data is monthly
+# Therefore, we calculate a 6-month moving average (previous 5 months + current)
+df <- df %>%
+  group_by(Item) %>%
+  mutate(MA_6 = slide_dbl(Price,
+                          mean,
+                          .before = 5,     # Previous 5 months
+                          .complete = TRUE)) # Only calculate when full 6 months are available
+
+# View final table
+print(df)
